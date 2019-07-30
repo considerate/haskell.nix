@@ -1,6 +1,6 @@
 { stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeSetupConfigFiles }:
 
-{ setup-depends, package, name, src, flags }:
+{ setup-depends, package, name, src, flags, preUnpack ? null, postUnpack ? null }:
 
 let
   fullName = "${name}-setup";
@@ -18,15 +18,16 @@ let
     };
   }; 
 
-in
- stdenv.lib.fix (drv:
-    stdenv.mkDerivation {
+in stdenv.lib.fix (drv:
+  stdenv.mkDerivation {
       name = "${fullName}";
       inherit src;
       nativeBuildInputs = [ghc];
 
       CABAL_CONFIG = configFiles + /cabal.config;
       phases = ["unpackPhase" "buildPhase" "installPhase"];
+      preUnpack = if preUnpack != null then preUnpack else "";
+      postUnpack = if postUnpack != null then postUnpack else "";
       buildPhase = ''
         for f in Setup.hs Setup.lhs; do
           if [ -f $f ]; then

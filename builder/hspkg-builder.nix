@@ -40,6 +40,7 @@ let
     then defaultSetup
     else setup-builder {
       setup-depends = package.setup-depends;
+      inherit (config) preUnpack postUnpack;
       inherit package name src flags;
     };
 
