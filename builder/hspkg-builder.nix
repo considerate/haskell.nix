@@ -1,4 +1,4 @@
-{ pkgs, buildPackages, stdenv, lib, haskellLib, ghc, buildGHC, fetchurl, runCommand, comp-builder, setup-builder }:
+{ pkgs, buildPackages, stdenv, lib, haskellLib, ghc, buildGHC, fetchurl, runCommand, comp-builder, setup-builder, makeSetupConfigFiles }:
 
 
 { flags
@@ -30,11 +30,29 @@ let
     import Distribution.Simple
     main = defaultMain
   '';
-  defaultSetup = buildPackages.runCommand "default-Setup" { nativeBuildInputs = [buildGHC]; } ''
-    cat ${defaultSetupSrc} > Setup.hs
-    mkdir -p $out/bin
-    ${buildGHC.targetPrefix}ghc Setup.hs --make -o $out/bin/Setup
-  '';
+
+  defaultConfig = makeSetupConfigFiles {
+    inherit (package) identifier;
+    inherit (config) flags;
+    fullName = "${name}-setup";
+    component = {
+      depends = [];
+      libs = [];
+      frameworks = [];
+      doExactConfig = false;
+    };
+  };
+  defaultSetup =
+    buildPackages.runCommand
+      "default-Setup"
+      { nativeBuildInputs = [buildGHC];
+        CABAL_CONFIG = defaultConfig + /cabal.config;
+      }
+      ''
+        cat ${defaultSetupSrc} > Setup.hs
+        mkdir -p $out/bin
+        ${buildGHC.targetPrefix}ghc Setup.hs --make -o $out/bin/Setup
+      '';
 
   setup = if package.buildType == "Simple"
     then defaultSetup
